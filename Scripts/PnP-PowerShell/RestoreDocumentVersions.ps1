@@ -1,8 +1,5 @@
 ﻿# General data
-# Username: ap-bp365@centralpuerto.com
-# Password: (5_&{wGXypgG;qjW
-# Backup site: https://centralpuerto.sharepoint.com/sites/DeprecatedSites
-# Descripción: "Backup de los sitios de SharePoint Online depurados como parte de la implementación de las políticas de colaboración y gobierno de Central Puerto."
+# Description: "Restore the last published major version of a document."
 
 # Script execution steps
 # 1. Ask for the environment to use (develop or production)
@@ -17,7 +14,7 @@
 # Clear and present
 Clear-Host
 Write-Host "=============================================" -ForegroundColor Green
-Write-Host "= Restauración de versiones de documentos de CAF =" -ForegroundColor Green
+Write-Host "= Restauración de versiones de documentos =" -ForegroundColor Green
 Write-Host "=============================================" -ForegroundColor Green
 
 Write-Host
@@ -53,7 +50,7 @@ $documentLibraryName = "Versions"
 
 # Ask for the document name to evaluate
 # $documentName = Read-Host "Ingrese el nombre del documento a tratar (ej. 'Documento.docx')"
-$documentName = "Document1.docx"
+$documentName = "Documento de prueba.docx"
 
 # Ask for the download path 
 # $DownloadPath = Read-Host "Ingrese la ruta donde descargar los archivos (ej. 'C:\Temp')"
@@ -79,7 +76,7 @@ try {
   Connect-PnPOnline -Url $siteUrl -Interactive -ErrorAction Stop
   
   # Get PnP Context to use in requests
-  $Ctx = Get-PnPContext
+  $ctx = Get-PnPContext
 
   # Get PnP Connection to use in requests
   $sourceConnection = Get-PnPConnection
@@ -97,21 +94,19 @@ try {
   $sourceConnection = Get-PnPConnection
 
   #Get the File
-  $FileRelativeURL = "/sites/${siteAlias}/${documentLibraryName}/${documentName}"
-  $File = Get-PnPFile -Url $FileRelativeURL
-  Write-Host $File
+  $fileRelativeURL = "/sites/${siteAlias}/${documentLibraryName}/${documentName}"
 
   # Get file as bytes
-  $currentFileStream = (Get-PnPFile -Url "/sites/${siteAlias}/${documentLibraryName}/${documentName}" -AsFileObject -Connection $sourceConnection).OpenBinaryStream()
+  $currentFileStream = (Get-PnPFile -Url $fileRelativeURL -AsFileObject -Connection $sourceConnection).OpenBinaryStream()
   Invoke-PnPQuery
 
   #Download File version to local disk
-  # $CurrentVersionPathName = "$($DownloadPath)\$($Version.VersionLabel)_$($File.Name)"
-  $CurrentVersionPathName = "$($DownloadPath)\$($documentName)"
+  # $CurrentVersionPathName = "$($DownloadPath)\$($version.VersionLabel)_$($file.Name)"
+  $CurrentVersionPathName = "$($DownloadPath)\$("Original")_$($documentName)"
   
-  [System.IO.FileStream] $FileStream = [System.IO.File]::Open($CurrentVersionPathName, [System.IO.FileMode]::Create)
-  $currentFileStream.Value.CopyTo($FileStream)
-  $FileStream.Close()
+  [System.IO.FileStream] $fileStream = [System.IO.File]::Open($CurrentVersionPathName, [System.IO.FileMode]::Create)
+  $currentFileStream.Value.CopyTo($fileStream)
+  $fileStream.Close()
   
   Write-Host -f Green "Version $($documentName) Downloaded to :" $CurrentVersionPathName 
 
@@ -123,10 +118,19 @@ catch {
 
 # 4. Get current document metadata
 try {
+  
+  # Obtén el archivo y sus propiedades
+  $file = Get-PnPFile -Url $fileRelativeURL -AsListItem
 
+  $fileProperties = $file.FieldValues
+  
+  # Imprime todas las propiedades del archivo
+  foreach ($property in $fileProperties.Keys) {
+    Write-Host "${property}: $($fileProperties[$property])"
+  }
   # Get File Versions
-  $FileId = Get-PnPProperty -ClientObject $File -Property Id 
-  Write-Host $FileId
+  # $fileId = Get-PnPProperty -ClientObject $file -Property Id 
+  # Write-Host $fileId
 
 }
 catch {
@@ -138,24 +142,30 @@ catch {
 Write-Host "Descargando las versiones previas del documento ${documentName}..." -ForegroundColor Yellow
 try {
 
+  # Get file as bytes
+  $file = Get-PnPFile -Url $fileRelativeURL
+  
   #Get File Versions
-  $FileVersions = Get-PnPProperty -ClientObject $File -Property Versions
+  $fileVersions = Get-PnPProperty -ClientObject $file -Property Versions
 
-  If ($FileVersions.Count -gt 0) {
-    Foreach ($Version in $FileVersions) {
+  If ($fileVersions.Count -gt 0) {
+    Foreach ($version in $fileVersions) {
+
+      Write-Host "Version Comments: " $version.CheckInComment
+
       #Frame File Name for the Version
-      $VersionFileName = "$($DownloadPath)\$($Version.VersionLabel)_$($File.Name)"
+      $versionFileName = "$($DownloadPath)\$($version.VersionLabel)_$($file.Name)"
 
       #Get Contents of the File Version
-      $VersionStream = $Version.OpenBinaryStream()
-      $Ctx.ExecuteQuery()
+      $versionStream = $version.OpenBinaryStream()
+      $ctx.ExecuteQuery()
   
       #Download File version to local disk
-      [System.IO.FileStream] $FileStream = [System.IO.File]::Open($VersionFileName, [System.IO.FileMode]::Create)
-      $VersionStream.Value.CopyTo($FileStream)
-      $FileStream.Close()
+      [System.IO.FileStream] $fileStream = [System.IO.File]::Open($versionFileName, [System.IO.FileMode]::Create)
+      $versionStream.Value.CopyTo($fileStream)
+      $fileStream.Close()
         
-      Write-Host -f Green "Version $($Version.VersionLabel) descargada en :" $VersionFileName
+      Write-Host -f Green "Version $($version.VersionLabel) descargada en :" $versionFileName
     }
   }
   Else {
@@ -172,7 +182,7 @@ catch {
 Write-Host "Eliminando versión actual de la biblioteca de documentos ${documentLibraryName}..." -ForegroundColor Yellow
 try {
   
-  Remove-PnPFile -ServerRelativeUrl $FileRelativeURL
+  Remove-PnPFile -ServerRelativeUrl $fileRelativeURL
 
 }
 catch {
@@ -180,7 +190,65 @@ catch {
   Write-Host $_.Exception.Message -ForegroundColor Red
 }
 
+# 7. Orderly upload document versions
+Write-Host "Restaurando versiones previas del documento ${documentName} en la biblioteca ${documentLibraryName} ..." -ForegroundColor Yellow
+try {
+  
+  # Obtener todas las versiones   OK
+  # Recorrer todas las versiones  OK
+  # Por cada version, 
+  #   Renombrar el archivo local al nombre final del doc  OK
+  #   Agregar el archivo a la biblioteca  OK
+  #   Actualizarle las propiedades de la version
+  #   Actualizarle las propiedades originales
+  #   Restaurar el nombre del archivo al nombre de version  OK
 
+  # Get file as bytes
+  # $file = Get-PnPFile -Url $fileRelativeURL
+  
+  #Get File Versions
+  # $fileVersions = Get-PnPProperty -ClientObject $file -Property Versions
+
+  If ($fileVersions.Count -gt 0) {
+    Foreach ($version in $fileVersions) {
+
+      # Frame File Name for the Version
+      $versionFilePath = "$($DownloadPath)\$($version.VersionLabel)_$($documentName)"
+      $documentFilePath = "$($DownloadPath)\$($documentName)"
+
+      # Rename version document to original name
+      Rename-Item -Path $versionFilePath -NewName $documentName
+      Write-Host -f Green "Version renamed."
+
+      # Add file version to document library
+      Add-PnPFile -Path $documentFilePath -Folder $documentLibraryName
+      Write-Host -f Green "Version uploaded"
+
+      # Revert rename version document to original name
+      Rename-Item -Path $documentFilePath -NewName "$($version.VersionLabel)_$($documentName)"
+      Write-Host -f Green "Version name reverted"
+
+      # Si es una version major subir las propiedades de comentarios y publicar como major
+
+    }
+  }
+  Else {
+    Write-host -f Yellow "No se encontraron versiones previas."
+  } 
+
+  
+
+}
+catch {
+  Write-Host "Error al restaurar versiones previas del documento" -ForegroundColor Red
+  Write-Host $_.Exception.Message -ForegroundColor Red
+}
+
+Write-Host
+Write-Host "Ejecución del script finalizada." -ForegroundColor Green
+Write-Host
+
+# Write-Host "..." -ForegroundColor Yellow
 # try {
   
 
