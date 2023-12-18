@@ -123,10 +123,13 @@ try {
   $file = Get-PnPFile -Url $fileRelativeURL -AsListItem
 
   $fileProperties = $file.FieldValues
+
+  # Crear objeto con las propiedades que se desean restaurar
   
   # Imprime todas las propiedades del archivo
   foreach ($property in $fileProperties.Keys) {
-    Write-Host "${property}: $($fileProperties[$property])"
+    # Write-Host "${property}: $($fileProperties[$property])"
+    Write-Host -f Yellow "Propiedades encontradas: " $fileProperties.Count
   }
   # Get File Versions
   # $fileId = Get-PnPProperty -ClientObject $file -Property Id 
@@ -151,7 +154,7 @@ try {
   If ($fileVersions.Count -gt 0) {
     Foreach ($version in $fileVersions) {
 
-      Write-Host "Version Comments: " $version.CheckInComment
+      # Write-Host "Version Comments: " $version.CheckInComment
 
       #Frame File Name for the Version
       $versionFileName = "$($DownloadPath)\$($version.VersionLabel)_$($file.Name)"
@@ -199,8 +202,9 @@ try {
   # Por cada version, 
   #   Renombrar el archivo local al nombre final del doc  OK
   #   Agregar el archivo a la biblioteca  OK
-  #   Actualizarle las propiedades de la version
-  #   Actualizarle las propiedades originales
+  #   Validar si es version major, publicar el documento
+  #   Actualizar las propiedades de la version
+  #   Actualizar las propiedades originales
   #   Restaurar el nombre del archivo al nombre de version  OK
 
   # Get file as bytes
@@ -235,8 +239,6 @@ try {
   Else {
     Write-host -f Yellow "No se encontraron versiones previas."
   } 
-
-  
 
 }
 catch {
