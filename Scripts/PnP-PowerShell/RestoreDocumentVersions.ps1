@@ -57,7 +57,7 @@ $documentName = "Documento de prueba.docx"
 $DownloadPath = "C:\Temp"
 
 Write-Host
-Write-Host "Iniciando script..." -ForegroundColor Yellow
+Write-Host "Iniciando script..." -ForegroundColor Blue
 Write-Host
 
 # Import PowerShell Modules
@@ -123,13 +123,12 @@ try {
   $file = Get-PnPFile -Url $fileRelativeURL -AsListItem
 
   $fileProperties = $file.FieldValues
-
+  Write-Host -f Yellow "Propiedades encontradas: " $fileProperties.Count
   # Crear objeto con las propiedades que se desean restaurar
   
   # Imprime todas las propiedades del archivo
   foreach ($property in $fileProperties.Keys) {
     # Write-Host "${property}: $($fileProperties[$property])"
-    Write-Host -f Yellow "Propiedades encontradas: " $fileProperties.Count
   }
   # Get File Versions
   # $fileId = Get-PnPProperty -ClientObject $file -Property Id 
@@ -153,8 +152,6 @@ try {
 
   If ($fileVersions.Count -gt 0) {
     Foreach ($version in $fileVersions) {
-
-      # Write-Host "Version Comments: " $version.CheckInComment
 
       #Frame File Name for the Version
       $versionFileName = "$($DownloadPath)\$($version.VersionLabel)_$($file.Name)"
@@ -202,16 +199,12 @@ try {
   # Por cada version, 
   #   Renombrar el archivo local al nombre final del doc  OK
   #   Agregar el archivo a la biblioteca  OK
-  #   Validar si es version major, publicar el documento
-  #   Actualizar las propiedades de la version
+  #   Validar si es version major, publicar el documento  OK
+  #   Actualizar las propiedades de la version  OK
   #   Actualizar las propiedades originales
   #   Restaurar el nombre del archivo al nombre de version  OK
 
-  # Get file as bytes
-  # $file = Get-PnPFile -Url $fileRelativeURL
-  
-  #Get File Versions
-  # $fileVersions = Get-PnPProperty -ClientObject $file -Property Versions
+  # $checkinType = 0
 
   If ($fileVersions.Count -gt 0) {
     Foreach ($version in $fileVersions) {
@@ -224,13 +217,23 @@ try {
       Rename-Item -Path $versionFilePath -NewName $documentName
       Write-Host -f Green "Version renamed."
 
-      # Add file version to document library
-      Add-PnPFile -Path $documentFilePath -Folder $documentLibraryName
-      Write-Host -f Green "Version uploaded"
+      # Valida si es una major version
+      If ($version.VersionLabel.Contains(".0")) {
+
+        # Add file version to document library
+        Add-PnPFile -Path $documentFilePath -Folder $documentLibraryName -Publish -PublishComment $version.CheckInComment
+        Write-Host -f Green "Version major uploaded."
+      }
+      Else {
+
+        # Add file version to document library
+        Add-PnPFile -Path $documentFilePath -Folder $documentLibraryName -CheckInComment $version.CheckInComment
+        Write-Host -f Green "Version minor uploaded."
+      }
 
       # Revert rename version document to original name
       Rename-Item -Path $documentFilePath -NewName "$($version.VersionLabel)_$($documentName)"
-      Write-Host -f Green "Version name reverted"
+      Write-Host -f Green "Version name reverted."
 
       # Si es una version major subir las propiedades de comentarios y publicar como major
 
@@ -247,7 +250,7 @@ catch {
 }
 
 Write-Host
-Write-Host "Ejecución del script finalizada." -ForegroundColor Green
+Write-Host "Ejecución del script finalizada." -ForegroundColor Blue
 Write-Host
 
 # Write-Host "..." -ForegroundColor Yellow
