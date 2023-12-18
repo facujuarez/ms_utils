@@ -45,12 +45,12 @@ else {
 }
 
 # Ask for the document library to evaluate
-# $documentLibraryName = Read-Host "Ingrese el nombre de la biblioteca de documentos a tratar (ej. 'Versiones')"
-$documentLibraryName = "Versions"
+$documentLibraryName = Read-Host "Ingrese el nombre de la biblioteca de documentos a tratar (ej. 'Versiones')"
+# $documentLibraryName = "Versions"
 
-# Ask for the document name to evaluate
-# $documentName = Read-Host "Ingrese el nombre del documento a tratar (ej. 'Documento.docx')"
-$documentName = "Documento de prueba.docx"
+# Ask for the server relative URL of the document to evaluate
+$fileRelativeURL = Read-Host "Ingrese la ruta relativa del documento a tratar (ej. '/sites/${siteAlias}/${documentLibraryName}/Documento.docx')"
+# $fileRelativeURL = "/sites/${siteAlias}/${documentLibraryName}/Documento de prueba.docx"
 
 # Ask for the download path 
 # $DownloadPath = Read-Host "Ingrese la ruta donde descargar los archivos (ej. 'C:\Temp')"
@@ -88,20 +88,18 @@ catch {
 }
 
 # 3. Get and Download the current version of the document
-Write-Host "Descargando la versión actual del documento ${documentName}..." -ForegroundColor Yellow
+Write-Host "Descargando la versión actual del documento..." -ForegroundColor Yellow
 try {
-  # Get PnP Connection to use in request
-  $sourceConnection = Get-PnPConnection
-
-  #Get the File
-  $fileRelativeURL = "/sites/${siteAlias}/${documentLibraryName}/${documentName}"
+  # Get PnP File
+  $file = Get-PnPFile -Url $fileRelativeURL -AsFileObject -Connection $sourceConnection
+  $documentName = $file.Name
 
   # Get file as bytes
-  $currentFileStream = (Get-PnPFile -Url $fileRelativeURL -AsFileObject -Connection $sourceConnection).OpenBinaryStream()
+  $currentFileStream = $file.OpenBinaryStream()
   Invoke-PnPQuery
 
   #Download File version to local disk
-  # $CurrentVersionPathName = "$($DownloadPath)\$($version.VersionLabel)_$($file.Name)"
+  # $documentName = "Documento de prueba.docx"
   $CurrentVersionPathName = "$($DownloadPath)\$("Original")_$($documentName)"
   
   [System.IO.FileStream] $fileStream = [System.IO.File]::Open($CurrentVersionPathName, [System.IO.FileMode]::Create)
@@ -128,7 +126,7 @@ try {
   
   # Imprime todas las propiedades del archivo
   foreach ($property in $fileProperties.Keys) {
-    # Write-Host "${property}: $($fileProperties[$property])"
+    Write-Host "${property}: $($fileProperties[$property])"
   }
   # Get File Versions
   # $fileId = Get-PnPProperty -ClientObject $file -Property Id 
@@ -179,10 +177,10 @@ catch {
 }
 
 # 6. Delete the document with all versions
-Write-Host "Eliminando versión actual de la biblioteca de documentos ${documentLibraryName}..." -ForegroundColor Yellow
+# Write-Host "Eliminando versión actual de la biblioteca de documentos ${documentLibraryName}..." -ForegroundColor Yellow
 try {
   
-  Remove-PnPFile -ServerRelativeUrl $fileRelativeURL
+  # Remove-PnPFile -ServerRelativeUrl $fileRelativeURL
 
 }
 catch {
@@ -191,7 +189,7 @@ catch {
 }
 
 # 7. Orderly upload document versions
-Write-Host "Restaurando versiones previas del documento ${documentName} en la biblioteca ${documentLibraryName} ..." -ForegroundColor Yellow
+#Write-Host "Restaurando versiones previas del documento ${documentName} en la biblioteca ${documentLibraryName} ..." -ForegroundColor Yellow
 try {
   
   # Obtener todas las versiones   OK
@@ -206,42 +204,42 @@ try {
 
   # $checkinType = 0
 
-  If ($fileVersions.Count -gt 0) {
-    Foreach ($version in $fileVersions) {
+  # If ($fileVersions.Count -gt 0) {
+  #   Foreach ($version in $fileVersions) {
 
-      # Frame File Name for the Version
-      $versionFilePath = "$($DownloadPath)\$($version.VersionLabel)_$($documentName)"
-      $documentFilePath = "$($DownloadPath)\$($documentName)"
+  #     # Frame File Name for the Version
+  #     $versionFilePath = "$($DownloadPath)\$($version.VersionLabel)_$($documentName)"
+  #     $documentFilePath = "$($DownloadPath)\$($documentName)"
 
-      # Rename version document to original name
-      Rename-Item -Path $versionFilePath -NewName $documentName
-      Write-Host -f Green "Version renamed."
+  #     # Rename version document to original name
+  #     Rename-Item -Path $versionFilePath -NewName $documentName
+  #     Write-Host -f Green "Version renamed."
 
-      # Valida si es una major version
-      If ($version.VersionLabel.Contains(".0")) {
+  #     # Valida si es una major version
+  #     If ($version.VersionLabel.Contains(".0")) {
 
-        # Add file version to document library
-        Add-PnPFile -Path $documentFilePath -Folder $documentLibraryName -Publish -PublishComment $version.CheckInComment
-        Write-Host -f Green "Version major uploaded."
-      }
-      Else {
+  #       # Add file version to document library
+  #       Add-PnPFile -Path $documentFilePath -Folder $documentLibraryName -Publish -PublishComment $version.CheckInComment
+  #       Write-Host -f Green "Version major uploaded."
+  #     }
+  #     Else {
 
-        # Add file version to document library
-        Add-PnPFile -Path $documentFilePath -Folder $documentLibraryName -CheckInComment $version.CheckInComment
-        Write-Host -f Green "Version minor uploaded."
-      }
+  #       # Add file version to document library
+  #       Add-PnPFile -Path $documentFilePath -Folder $documentLibraryName -CheckInComment $version.CheckInComment
+  #       Write-Host -f Green "Version minor uploaded."
+  #     }
 
-      # Revert rename version document to original name
-      Rename-Item -Path $documentFilePath -NewName "$($version.VersionLabel)_$($documentName)"
-      Write-Host -f Green "Version name reverted."
+  #     # Revert rename version document to original name
+  #     Rename-Item -Path $documentFilePath -NewName "$($version.VersionLabel)_$($documentName)"
+  #     Write-Host -f Green "Version name reverted."
 
-      # Si es una version major subir las propiedades de comentarios y publicar como major
+  #     # Si es una version major subir las propiedades de comentarios y publicar como major
 
-    }
-  }
-  Else {
-    Write-host -f Yellow "No se encontraron versiones previas."
-  } 
+  #   }
+  # }
+  # Else {
+  #   Write-host -f Yellow "No se encontraron versiones previas."
+  # } 
 
 }
 catch {
