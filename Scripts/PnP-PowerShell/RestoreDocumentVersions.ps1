@@ -18,7 +18,7 @@ Write-Host "= Restauración de versiones de documentos =" -ForegroundColor Green
 Write-Host "=============================================" -ForegroundColor Green
 
 Write-Host
-Write-Host "Este proceso ..." -ForegroundColor Magenta
+Write-Host -f Magenta "Este proceso restaura la última versión MAYOR de un documento en una biblioteca de documentos de SharePoint."
 Write-Host
 
 # Set main variables
@@ -40,7 +40,7 @@ elseif ($environment -eq "D") {
   $siteUrl = "https://${tenantName}.sharepoint.com/sites/${siteAlias}"
 }
 else {
-  Write-Host "No se ha ingresado un valor válido. El script se cerrará." -ForegroundColor Red
+  Write-Host -f Red"No se ha ingresado un valor válido. El script se cerrará."
   exit
 }
 
@@ -49,15 +49,15 @@ $documentLibraryName = Read-Host "Ingrese el nombre de la biblioteca de document
 # $documentLibraryName = "Versions"
 
 # Ask for the server relative URL of the document to evaluate
-$fileRelativeURL = Read-Host "Ingrese la ruta relativa del documento a tratar (ej. '/sites/${siteAlias}/${documentLibraryName}/Documento.docx')"
-# $fileRelativeURL = "/sites/${siteAlias}/${documentLibraryName}/Documento de prueba.docx"
+$fileSiteRelativeURL = Read-Host "Ingrese la ruta relativa del documento a tratar (ej. '${documentLibraryName}/Documento.docx')"
+# $fileSiteRelativeURL = "/sites/${siteAlias}/${documentLibraryName}/Documento de prueba.docx"
 
 # Ask for the download path 
 # $DownloadPath = Read-Host "Ingrese la ruta donde descargar los archivos (ej. 'C:\Temp')"
 $DownloadPath = "C:\Temp"
 
 Write-Host
-Write-Host "Iniciando script..." -ForegroundColor Blue
+Write-Host -f Blue "Iniciando script..."
 Write-Host
 
 # Import PowerShell Modules
@@ -71,7 +71,7 @@ Write-Host
 # }
 
 # 2. Connect to the source SharePoint Online Site
-Write-Host "Conectando al sitio ${siteAlias}..." -ForegroundColor Yellow
+Write-Host -f Yellow "Conectando al sitio ${siteAlias}..."
 try {
   Connect-PnPOnline -Url $siteUrl -Interactive -ErrorAction Stop
   
@@ -83,15 +83,15 @@ try {
 
 }
 catch {
-  Write-Host "Error al conectarse a SharePoint Online" -ForegroundColor Red
+  Write-Host -f Red "Error al conectarse a SharePoint Online"
   Write-Host $_.Exception.Message -ForegroundColor Red
 }
 
 # 3. Get and Download the current version of the document
-Write-Host "Descargando la versión actual del documento..." -ForegroundColor Yellow
+Write-Host -f Yellow "Descargando la versión actual del documento..."
 try {
   # Get PnP File
-  $file = Get-PnPFile -Url $fileRelativeURL -AsFileObject -Connection $sourceConnection
+  $file = Get-PnPFile -Url $fileSiteRelativeURL -AsFileObject -Connection $sourceConnection
   $documentName = $file.Name
 
   # Get file as bytes
@@ -99,7 +99,6 @@ try {
   Invoke-PnPQuery
 
   #Download File version to local disk
-  # $documentName = "Documento de prueba.docx"
   $CurrentVersionPathName = "$($DownloadPath)\$("Original")_$($documentName)"
   
   [System.IO.FileStream] $fileStream = [System.IO.File]::Open($CurrentVersionPathName, [System.IO.FileMode]::Create)
@@ -110,40 +109,88 @@ try {
 
 }
 catch {
-  Write-Host "Error al descargar la versión actual del documento" -ForegroundColor Red
-  Write-Host $_.Exception.Message -ForegroundColor Red
+  Write-Host -f Red "Error al descargar la versión actual del documento"
+  Write-Host -f Red $_.Exception.Message
 }
 
 # 4. Get current document metadata
+Write-Host -f Yellow "Obteniendo la metadata del documento ${documentName}..."
 try {
-  
+
   # Obtén el archivo y sus propiedades
-  $file = Get-PnPFile -Url $fileRelativeURL -AsListItem
+  $file = Get-PnPFile -Url $fileSiteRelativeURL -AsListItem
 
   $fileProperties = $file.FieldValues
   Write-Host -f Yellow "Propiedades encontradas: " $fileProperties.Count
-  # Crear objeto con las propiedades que se desean restaurar
   
+  $filePropertiesKeysValues = @{}
+
   # Imprime todas las propiedades del archivo
   foreach ($property in $fileProperties.Keys) {
-    Write-Host "${property}: $($fileProperties[$property])"
+    # Write-Host "(Key)-${property}: (Value)-$($fileProperties[$property])"
+
+    switch ($property) {
+      # "Aprobador" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property].LookupId)} }
+      "AprobadorTexto" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property]) } }
+      # "Autor" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property].LookupId)} }
+      # "AutorTexto" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} }
+      # "CargoAprobador" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} }
+      # "CargoAutor" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} }
+      # "CargoRevisorPrincipal" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} }
+      # "CategoriaLookup" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property].LookupId)} }
+      # "CodigoCalidad" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} }
+      # "Componente" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} }
+      # "Created" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} }
+      # "Descripcion" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} }
+      # "EstadoLookup" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property].LookupId)} }
+      "FechaAprobador" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property]) } }
+      # "FechaAutor" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} }
+      # "FechaFirma" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} }
+      # "FechaDocumento" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} }
+      # "FechaRevisorPrincipal" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} }
+      # "DocumentoFirmado" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} }
+      # "IsFileLocked" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} }
+      # "Modified" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} }
+      # "ModuloLookup" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property].LookupId)} }
+      # "ProyClienteArea" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} }
+      # "RegistroRevision" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} }
+      "RequiereRR" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property]) } }
+      # "RevisionAdmon" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} }
+      # "RevisorAdministracion" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property].LookupId)} }
+      # "RevisorAdministracionTexto" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} }
+      # "RevisorPrincipal" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property].LookupId)} }
+      # "RevisorPrincipalTexto" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} }
+      # "Revisores" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} }
+      # "SistemaTematicaProd" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} }
+      # "ClaseLookup" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property].LookupId)} }
+      # "TipoDocumentoLookup" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property].LookupId)} }
+      # "TipoPlantillaLookup" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property].LookupId)} }
+      # "Title" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} }
+      # "TituloDocumento" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} }
+      # "VersionTexto" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} }
+      # "WordApprovedToProducing" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} }
+      # "WordMoficicacion" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} }
+      # "Author" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property].LookupId)} }
+      # "Editor" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property].LookupId)} }
+      
+      Default {}
+    }
   }
-  # Get File Versions
-  # $fileId = Get-PnPProperty -ClientObject $file -Property Id 
-  # Write-Host $fileId
+
+  Write-Host $filePropertiesKeysValues
 
 }
 catch {
-  Write-Host "Error al " -ForegroundColor Red
-  Write-Host $_.Exception.Message -ForegroundColor Red
+  Write-Host -f Red "Error al obtener la metadata del documento."
+  Write-Host -f Red $_.Exception.Message
 }
 
 # 5. Download all versions of the document
-Write-Host "Descargando las versiones previas del documento ${documentName}..." -ForegroundColor Yellow
+Write-Host -f Yellow "Descargando las versiones previas del documento ${documentName}..."
 try {
 
   # Get file as bytes
-  $file = Get-PnPFile -Url $fileRelativeURL
+  $file = Get-PnPFile -Url $fileSiteRelativeURL
   
   #Get File Versions
   $fileVersions = Get-PnPProperty -ClientObject $file -Property Versions
@@ -172,83 +219,86 @@ try {
 
 }
 catch {
-  Write-Host "Error al descargar todas las versiones previas del documento." -ForegroundColor Red
-  Write-Host $_.Exception.Message -ForegroundColor Red
+  Write-Host -f Red "Error al descargar todas las versiones previas del documento."
+  Write-Host -f Red $_.Exception.Message
 }
 
 # 6. Delete the document with all versions
-# Write-Host "Eliminando versión actual de la biblioteca de documentos ${documentLibraryName}..." -ForegroundColor Yellow
+Write-Host "Eliminando versión actual y previas del documento ${documentName}..." -ForegroundColor Yellow
 try {
   
-  # Remove-PnPFile -ServerRelativeUrl $fileRelativeURL
+  Remove-PnPFile -SiteRelativeUrl "$($documentLibraryName)/$($documentName)" -Connection $sourceConnection
+  Write-Host -f Green "Documento $($documentLibraryName)/$($documentName) removido."
+
+  Write-Host
+  Write-Host -f Yellow "Iniciando pausado..."
+  
+  Start-Sleep -Seconds 2
+  
+  Write-Host -f Yellow "Fin del pausado."
+  Write-Host
+
+  # Some code after the pause
+
 
 }
 catch {
-  Write-Host "Error al eliminar el documento de la biblioteca de documentos" -ForegroundColor Red
-  Write-Host $_.Exception.Message -ForegroundColor Red
+  Write-Host -f Red "Error al eliminar el documento de la biblioteca de documentos"
+  Write-Host -f Red $_.Exception.Message
 }
 
 # 7. Orderly upload document versions
-#Write-Host "Restaurando versiones previas del documento ${documentName} en la biblioteca ${documentLibraryName} ..." -ForegroundColor Yellow
+Write-Host "Restaurando versiones previas del documento ${documentName} en la biblioteca ${documentLibraryName} ..." -ForegroundColor Yellow
 try {
   
-  # Obtener todas las versiones   OK
-  # Recorrer todas las versiones  OK
-  # Por cada version, 
-  #   Renombrar el archivo local al nombre final del doc  OK
-  #   Agregar el archivo a la biblioteca  OK
-  #   Validar si es version major, publicar el documento  OK
-  #   Actualizar las propiedades de la version  OK
-  #   Actualizar las propiedades originales
-  #   Restaurar el nombre del archivo al nombre de version  OK
+  If ($fileVersions.Count -gt 0) {
+    Foreach ($version in $fileVersions) {
 
-  # $checkinType = 0
+      # Frame File Name for the Version
+      $versionFilePath = "$($DownloadPath)\$($version.VersionLabel)_$($documentName)"
+      $documentFilePath = "$($DownloadPath)\$($documentName)"
 
-  # If ($fileVersions.Count -gt 0) {
-  #   Foreach ($version in $fileVersions) {
+      # Rename version document to original name
+      Rename-Item -Path $versionFilePath -NewName $documentName
 
-  #     # Frame File Name for the Version
-  #     $versionFilePath = "$($DownloadPath)\$($version.VersionLabel)_$($documentName)"
-  #     $documentFilePath = "$($DownloadPath)\$($documentName)"
+      # Valida si es la major version final
+      If ($version.VersionLabel.Contains("1.0")) {
 
-  #     # Rename version document to original name
-  #     Rename-Item -Path $versionFilePath -NewName $documentName
-  #     Write-Host -f Green "Version renamed."
+        # Add file version to document library
+        Add-PnPFile -Path $documentFilePath -Folder $documentLibraryName -Publish -PublishComment $version.CheckInComment -ContentType "Documento de calidad" 
+        Write-Host -f Green "Version $($version.VersionLabel) uploaded."
+      }
+      Else {
 
-  #     # Valida si es una major version
-  #     If ($version.VersionLabel.Contains(".0")) {
+        # Add file version to document library
+        Add-PnPFile -Path $documentFilePath -Folder $documentLibraryName -CheckInComment $version.CheckInComment -ContentType "Documento de calidad"
+        Write-Host -f Green "Version $($version.VersionLabel) uploaded."
 
-  #       # Add file version to document library
-  #       Add-PnPFile -Path $documentFilePath -Folder $documentLibraryName -Publish -PublishComment $version.CheckInComment
-  #       Write-Host -f Green "Version major uploaded."
-  #     }
-  #     Else {
+        $fileListItem = Get-PnPFile -Url $fileSiteRelativeURL -AsListItem
 
-  #       # Add file version to document library
-  #       Add-PnPFile -Path $documentFilePath -Folder $documentLibraryName -CheckInComment $version.CheckInComment
-  #       Write-Host -f Green "Version minor uploaded."
-  #     }
+        # Add properties to file as list item
+        Set-PnPListItem -List $documentLibraryName -Identity $fileListItem.Id -Values $filePropertiesKeysValues -UpdateType UpdateOverwriteVersion 
+        Write-Host -f Green "Version $($version.VersionLabel) properties updated."
+      }
 
-  #     # Revert rename version document to original name
-  #     Rename-Item -Path $documentFilePath -NewName "$($version.VersionLabel)_$($documentName)"
-  #     Write-Host -f Green "Version name reverted."
+      # Revert rename version document to original name
+      Rename-Item -Path $documentFilePath -NewName "$($version.VersionLabel)_$($documentName)"
+      Write-Host -f Green "Version name reverted."
 
-  #     # Si es una version major subir las propiedades de comentarios y publicar como major
-
-  #   }
-  # }
-  # Else {
-  #   Write-host -f Yellow "No se encontraron versiones previas."
-  # } 
+    }
+  }
+  Else {
+    Write-host -f Yellow "No se encontraron versiones previas."
+  } 
 
 }
 catch {
-  Write-Host "Error al restaurar versiones previas del documento" -ForegroundColor Red
-  Write-Host $_.Exception.Message -ForegroundColor Red
+  Write-Host -f Red "Error al restaurar versiones previas del documento"
+  Write-Host -f Red $_.Exception.Message
 }
 
 Write-Host
-Write-Host "Ejecución del script finalizada." -ForegroundColor Blue
+Write-Host -f Blue "Ejecución del script finalizada."
 Write-Host
 
 # Write-Host "..." -ForegroundColor Yellow
@@ -263,50 +313,8 @@ Write-Host
 
 
 # ------------------------------------------------------------------------------------------------------------
-  
-# Get the previous file version
-# $previousVersion = Get-PnPFileVersion -Url "/sites/${siteAlias}/${documentLibraryName}/Document1.docx"
-  
-#$previousVersion = Get-PnPListItemVersion -List $documentLibraryName -Identity 10
-#foreach ($previousVersionItem in $previousVersion) {
-#  Write-Host "VersionLabel: $($previousVersionItem.VersionLabel)"
-#}
-
-# Download the previous major version content
-# Get-PnPFile -Url "/sites/${siteAlias}/${documentLibraryName}/Document1.docx" -Path c:\temp -FileName Document1.docx -AsFile
-# Write-Output "File downloaded to C:\Temp"
-  
-# # Delete the current file (including all minor versions)
-# Remove-PnPFile -List $LibraryName -ItemId $ItemId
-# Remove-PnPFile -ServerRelativeUrl "/sites/${siteAlias}/${documentLibraryName}/Document1.docx"
-# Write-Output "File removed"
-
-# Upload the previous major version content back to the library
-# Add-PnPFile -List $LibraryName -ItemId $ItemId -Path ".\previousVersion.docx"
-# Add-PnPFile -FileName Document11.docx -Folder "Versions" -Stream $stream -Values @{Modified = "12/14/2023" } 
-
-# Write-Output "File reverted to previous major version (1.0) successfully!"
-
-# $output = Get-PnPListItemVersion -List $documentLibraryName -Identity 16
-# Get-PnPFile -List $documentLibraryName -ItemId 16 -VersionNumber 1 -Path ./previousVersion.docx
-
-# Obtén información sobre el documento
-# $file = Get-PnPFile -Url "/sites/${siteAlias}/${documentLibraryName}/Document1.docx"
-# Revierte a la versión deseada (en este caso, la versión 4.0)
-# Restore-PnPTenantRecycleBinItem -Identity $file.Versions[1.0].RecycleBinItemId -List "/sites/${siteAlias}/${documentLibraryName}"
 
 # $output = Invoke-PnPSPRestMethod -Method Post -Url "/_api/web/GetFolderByServerRelativeUrl('/sites/${siteAlias}/${documentLibraryName}')/files('Document.docx')/unpublish(comment='Check-in comment for the unpublish operation.')"
 # $output = Invoke-PnPSPRestMethod -Url "/_api/web/GetFolderByServerRelativeUrl('/sites/${siteAlias}/${documentLibraryName}')/files('Document.docx')/$value"
 # $output = Invoke-PnPSPRestMethod -Method Post -Url "/_api/web/GetFileByServerRelativeUrl('/sites/${siteAlias}/${documentLibraryName}/Document.docx')/unpublish()"
   
-# $output = Invoke-PnPSPRestMethod -Url "/_api/web/GetFileByServerRelativePath(decodedurl='/sites/${siteAlias}/${documentLibraryName}/Document1.docx')/versions()" -Content $item
-# Write-Host "Previous version URL: " $previousVersion.Url
-# Write-Host "Previous version Label: "$previousVersion.VersionLabel
-# Write-Host "Previous version Stream: " $previousVersionBinaryStream
-# Write-Host "Current version : "$currentVersion
-
-# Retrieves the version history of a file, not including its current version
-# $fileVersion = Get-PnPFileVersion -Url "/sites/${siteAlias}/${documentLibraryName}/3.Documento%20de%20prueba.docx" 
-# Write-Host "Datos de versiones 3.Documento%20de%20prueba.docx..." -ForegroundColor Yellow
-# $fileVersion
-# Write-Host
