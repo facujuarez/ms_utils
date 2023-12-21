@@ -141,7 +141,7 @@ try {
       # "CategoriaLookup" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property].LookupId)} }
       # "CodigoCalidad" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} }
       # "Componente" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} }
-      "Created" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} }
+      # "Created" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} }
       # "Descripcion" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} }
       # "EstadoLookup" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property].LookupId)} }
       # "FechaAprobador" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property]) } }
@@ -274,13 +274,37 @@ try {
       }
       Else {
 
+        # Restore Created and Modified version properties
+        $createdProperty = "Created"
+        $modifiedProperty = "Modified"
+
+        If ($version.VersionLabel.Contains('0.2')) {
+          $propertyValue = (Get-Date -Year 2023 -Month 07 -Day 20)
+          $filePropertiesKeysValues += @{${createdProperty} = $($propertyValue) }
+          $filePropertiesKeysValues += @{${modifiedProperty} = $($propertyValue) }
+        }
+
+        If ($version.VersionLabel.Contains('0.3')) {
+          $propertyValue = (Get-Date -Year 2023 -Month 07 -Day 21)
+          $filePropertiesKeysValues += @{${modifiedProperty} = $($propertyValue) }
+        }
+
+        If ($version.VersionLabel.Contains('0.4')) {
+          $propertyValue = (Get-Date -Year 2023 -Month 07 -Day 22)
+          $filePropertiesKeysValues += @{${modifiedProperty} = $($propertyValue) }
+        }
+
         # Add file version to document library
         Add-PnPFile -Path $documentFilePath -Folder $documentLibraryName -CheckInComment $version.CheckInComment -ContentType "Documento de calidad"
         Write-Host -f Green "Version $($version.VersionLabel) restaurada."
 
+        Write-Host
+        Write-Host -f Yellow "Actualizando propiedades de la versión del documento..."
+        Start-Sleep -Seconds 2
+
         # Add properties to file as list item
         $fileListItem = Get-PnPFile -Url $fileSiteRelativeURL -AsListItem
-        Set-PnPListItem -List $documentLibraryName -Identity $fileListItem.Id -Values $filePropertiesKeysValues -UpdateType UpdateOverwriteVersion -Force
+        Set-PnPListItem -List $documentLibraryName -Identity $fileListItem.Id -Values $filePropertiesKeysValues -UpdateType SystemUpdate -Force
         Write-Host -f Green "Propiedades actualizadas para version $($version.VersionLabel)"
       }
 
