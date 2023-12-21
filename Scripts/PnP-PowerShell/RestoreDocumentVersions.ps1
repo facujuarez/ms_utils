@@ -119,7 +119,7 @@ Write-Host
 Write-Host -f Yellow "Obteniendo la metadata del documento ${documentName}..."
 try {
 
-  # Obtén el archivo y sus propiedades
+  # Get PnP File as list item
   $file = Get-PnPFile -Url $fileSiteRelativeURL -AsListItem
 
   $fileProperties = $file.FieldValues
@@ -127,13 +127,12 @@ try {
   
   $filePropertiesKeysValues = @{}
 
-  # Imprime todas las propiedades del archivo
+  # Set list item properties to upgrade
   foreach ($property in $fileProperties.Keys) {
-    # Write-Host "(Key)-${property}: (Value)-$($fileProperties[$property])"
 
     switch ($property) {
-      "Aprobador" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property].LookupValue)} }
-      "AprobadorTexto" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property]) } }
+      # "Aprobador" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property].LookupValue)} }
+      # "AprobadorTexto" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property]) } }
       # "Autor" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property].LookupValue)} }
       # "AutorTexto" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} }
       # "CargoAprobador" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} }
@@ -142,21 +141,21 @@ try {
       # "CategoriaLookup" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property].LookupId)} }
       # "CodigoCalidad" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} }
       # "Componente" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} }
-      # "Created" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} }
+      "Created" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} }
       # "Descripcion" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} }
-      "EstadoLookup" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property].LookupId)} }
-      "FechaAprobador" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property]) } }
+      # "EstadoLookup" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property].LookupId)} }
+      # "FechaAprobador" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property]) } }
       # "FechaAutor" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} }
       # "FechaFirma" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} }
       # "FechaDocumento" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} }
       # "FechaRevisorPrincipal" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} }
       # "DocumentoFirmado" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} }
       # "IsFileLocked" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} }
-      # "Modified" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} } Personalizar al de la ultima version major
+      # "Modified" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} } #Personalizar al de la ultima version major
       # "ModuloLookup" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property].LookupId)} }
       # "ProyClienteArea" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} }
       # "RegistroRevision" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} }
-      "RequiereRR" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property]) } }
+      # "RequiereRR" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property]) } }
       # "RevisionAdmon" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} }
       # "RevisorAdministracion" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property].LookupValue)} }
       # "RevisorAdministracionTexto" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} }
@@ -167,7 +166,7 @@ try {
       # "ClaseLookup" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property].LookupId)} }
       # "TipoDocumentoLookup" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property].LookupId)} }
       # "TipoPlantillaLookup" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property].LookupId)} }
-      "Title" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} }
+      # "Title" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} }
       # "TituloDocumento" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} }
       # "VersionTexto" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} }
       # "WordApprovedToProducing" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} }
@@ -179,6 +178,7 @@ try {
     }
   }
 
+  # Print list item properties to upgrade
   Write-Host $filePropertiesKeysValues
 
 }
@@ -192,7 +192,7 @@ Write-Host
 Write-Host -f Yellow "Descargando las versiones previas del documento ${documentName}..."
 try {
 
-  # Get file as bytes
+  # Get PnP File
   $file = Get-PnPFile -Url $fileSiteRelativeURL
   
   #Get File Versions
@@ -232,6 +232,7 @@ Write-Host
 Write-Host "Eliminando versión actual y previas del documento ${documentName}..." -ForegroundColor Yellow
 try {
   
+  # Delete file from Document library
   Remove-PnPFile -SiteRelativeUrl "$($documentLibraryName)/$($documentName)" -Connection $sourceConnection -Force
   Write-Host -f Green "Documento $($documentLibraryName)/$($documentName) removido."
 
@@ -277,10 +278,9 @@ try {
         Add-PnPFile -Path $documentFilePath -Folder $documentLibraryName -CheckInComment $version.CheckInComment -ContentType "Documento de calidad"
         Write-Host -f Green "Version $($version.VersionLabel) restaurada."
 
-        $fileListItem = Get-PnPFile -Url $fileSiteRelativeURL -AsListItem
-
         # Add properties to file as list item
-        Set-PnPListItem -List $documentLibraryName -Identity $fileListItem.Id -Values $filePropertiesKeysValues -UpdateType UpdateOverwriteVersion 
+        $fileListItem = Get-PnPFile -Url $fileSiteRelativeURL -AsListItem
+        Set-PnPListItem -List $documentLibraryName -Identity $fileListItem.Id -Values $filePropertiesKeysValues -UpdateType UpdateOverwriteVersion -Force
         Write-Host -f Green "Propiedades actualizadas para version $($version.VersionLabel)"
       }
 
