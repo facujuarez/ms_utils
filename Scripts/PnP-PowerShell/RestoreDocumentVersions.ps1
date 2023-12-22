@@ -17,7 +17,7 @@ Write-Host -f DarkCyan "= Restauración de versiones de documentos ="
 Write-Host -f DarkCyan "============================================="
 
 Write-Host
-Write-Host -f Magenta "Este proceso restaura la última versión MAYOR de un documento en una biblioteca de documentos de SharePoint."
+Write-Host -f Magenta "Este proceso restaura una versión previa deseada de un documento en una biblioteca de documentos de SharePoint."
 Write-Host
 
 # Set main variables
@@ -275,24 +275,22 @@ try {
       Else {
 
         # Restore Created and Modified version properties
-        $createdProperty = "Created"
-        $modifiedProperty = "Modified"
+        # $modifiedProperty = "Modified"
 
-        If ($version.VersionLabel.Contains('0.2')) {
-          $propertyValue = (Get-Date -Year 2023 -Month 07 -Day 20)
-          $filePropertiesKeysValues += @{${createdProperty} = $($propertyValue) }
-          $filePropertiesKeysValues += @{${modifiedProperty} = $($propertyValue) }
-        }
+        # If ($version.VersionLabel.Contains('0.2')) {
+        #   $propertyValue = (Get-Date -Year 2023 -Month 07 -Day 20)
+        #   $filePropertiesKeysValues += @{${modifiedProperty} = $($propertyValue) }
+        # }
 
-        If ($version.VersionLabel.Contains('0.3')) {
-          $propertyValue = (Get-Date -Year 2023 -Month 07 -Day 21)
-          $filePropertiesKeysValues += @{${modifiedProperty} = $($propertyValue) }
-        }
+        # If ($version.VersionLabel.Contains('0.3')) {
+        #   $propertyValue = (Get-Date -Year 2023 -Month 07 -Day 21)
+        #   $filePropertiesKeysValues += @{${modifiedProperty} = $($propertyValue) }
+        # }
 
-        If ($version.VersionLabel.Contains('0.4')) {
-          $propertyValue = (Get-Date -Year 2023 -Month 07 -Day 22)
-          $filePropertiesKeysValues += @{${modifiedProperty} = $($propertyValue) }
-        }
+        # If ($version.VersionLabel.Contains('0.4')) {
+        #   $propertyValue = (Get-Date -Year 2023 -Month 07 -Day 22)
+        #   $filePropertiesKeysValues += @{${modifiedProperty} = $($propertyValue) }
+        # }
 
         # Add file version to document library
         Add-PnPFile -Path $documentFilePath -Folder $documentLibraryName -CheckInComment $version.CheckInComment -ContentType "Documento de calidad"
@@ -302,7 +300,7 @@ try {
         Write-Host -f Yellow "Actualizando propiedades de la versión del documento..."
         Start-Sleep -Seconds 2
 
-        # Add properties to file as list item
+        # Update properties to file as list item
         $fileListItem = Get-PnPFile -Url $fileSiteRelativeURL -AsListItem
         Set-PnPListItem -List $documentLibraryName -Identity $fileListItem.Id -Values $filePropertiesKeysValues -UpdateType SystemUpdate -Force
         Write-Host -f Green "Propiedades actualizadas para version $($version.VersionLabel)"
