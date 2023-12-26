@@ -1,4 +1,4 @@
-# Utils applicable to Microsoft technology projects
+# Utils MS
 
 Este repo contiene Scripts, Templates y ejemplos aplicables a proyectos de desarrollo basados en tecnologías Microsoft.
 
