@@ -141,7 +141,7 @@ try {
       # "CategoriaLookup" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property].LookupId)} }
       # "CodigoCalidad" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} }
       # "Componente" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} }
-      # "Created" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} }
+      "Created" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property]) } }
       # "Descripcion" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property])} }
       # "EstadoLookup" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property].LookupId)} }
       # "FechaAprobador" { $filePropertiesKeysValues += @{${property} = $($fileProperties[$property]) } }
@@ -261,53 +261,48 @@ try {
       # Rename version document to original name
       Rename-Item -Path $versionFilePath -NewName $documentName
 
-      # Valida si es la major version final
-      If ($version.VersionLabel.Contains($targetVersion)) {
+      # Restore Modified version property
+      switch ($version.VersionLabel) {
+        "0.1" { $modifiedPropertyValue = "12/28/2022" }
+        "0.2" { $modifiedPropertyValue = "12/29/2022" }
+        "0.3" { $modifiedPropertyValue = "12/30/2022" }
+        "0.4" { $modifiedPropertyValue = "12/31/2022" }
+        "1.0" { $modifiedPropertyValue = "01/01/2022" }
+        Default {}
+      }
+
+      # Valida si es una major version
+      If ($version.VersionLabel.Contains(".0")) {
 
         # Add file version to document library
-        Add-PnPFile -Path $documentFilePath -Folder $documentLibraryName -Publish -PublishComment $version.CheckInComment -ContentType "Documento de calidad" 
-        Write-Host -f Green "Versión objetivo $($version.VersionLabel) restaurada."
-
+        Add-PnPFile -Path $documentFilePath -Folder $documentLibraryName -Publish -PublishComment $version.CheckInComment -ContentType "Documento de calidad" -Values @{Modified = $($modifiedPropertyValue); Created = $($fileProperties["Created"]);}
         Write-Host
-        Write-Host -f Blue "Terminando proceso de restauración..."
-        break
+        Write-Host -f Green "Versión objetivo $($version.VersionLabel) restaurada."
+        
       }
       Else {
 
-        # Restore Created and Modified version properties
-        # $modifiedProperty = "Modified"
-
-        # If ($version.VersionLabel.Contains('0.2')) {
-        #   $propertyValue = (Get-Date -Year 2023 -Month 07 -Day 20)
-        #   $filePropertiesKeysValues += @{${modifiedProperty} = $($propertyValue) }
-        # }
-
-        # If ($version.VersionLabel.Contains('0.3')) {
-        #   $propertyValue = (Get-Date -Year 2023 -Month 07 -Day 21)
-        #   $filePropertiesKeysValues += @{${modifiedProperty} = $($propertyValue) }
-        # }
-
-        # If ($version.VersionLabel.Contains('0.4')) {
-        #   $propertyValue = (Get-Date -Year 2023 -Month 07 -Day 22)
-        #   $filePropertiesKeysValues += @{${modifiedProperty} = $($propertyValue) }
-        # }
-
         # Add file version to document library
-        Add-PnPFile -Path $documentFilePath -Folder $documentLibraryName -CheckInComment $version.CheckInComment -ContentType "Documento de calidad"
+        Add-PnPFile -Path $documentFilePath -Folder $documentLibraryName -CheckInComment $version.CheckInComment -ContentType "Documento de calidad" -Values @{Modified = $($modifiedPropertyValue); Created = $($fileProperties["Created"]);}
         Write-Host -f Green "Version $($version.VersionLabel) restaurada."
 
-        Write-Host
-        Write-Host -f Yellow "Actualizando propiedades de la versión del documento..."
-        Start-Sleep -Seconds 2
+        # Write-Host
+        # Write-Host -f Yellow "Actualizando propiedades de la versión del documento..."
+        # Start-Sleep -Seconds 1
 
         # Update properties to file as list item
-        $fileListItem = Get-PnPFile -Url $fileSiteRelativeURL -AsListItem
-        Set-PnPListItem -List $documentLibraryName -Identity $fileListItem.Id -Values $filePropertiesKeysValues -UpdateType SystemUpdate -Force
-        Write-Host -f Green "Propiedades actualizadas para version $($version.VersionLabel)"
+        # $fileListItem = Get-PnPFile -Url $fileSiteRelativeURL -AsListItem
+        # Set-PnPListItem -List $documentLibraryName -Identity $fileListItem.Id -Values $filePropertiesKeysValues -UpdateType SystemUpdate -Force
+        # Write-Host -f Green "Propiedades actualizadas para version $($version.VersionLabel)"
       }
 
       # Revert rename version document to original name
       Rename-Item -Path $documentFilePath -NewName "$($version.VersionLabel)_$($documentName)"
+
+      If ($version.VersionLabel.Contains($targetVersion)) {
+        Write-Host -f Blue "Terminando proceso de restauración..."
+        break
+      }
 
     }
   }

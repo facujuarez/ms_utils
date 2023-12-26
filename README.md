@@ -1,10 +1,11 @@
 # Utils applicable to Microsoft technology projects
 
-This repo contains Scripts, Templates and samples applicable to Microsoft technology projects.
+Este repo contiene Scripts, Templates y ejemplos aplicables a proyectos de desarrollo basados en tecnologías Microsoft.
 
 ## Scripts
 
 ### PnP PowerShell
 
-* **Export document versions**: _Describe the goal of the solution_
-* **Restore document versions**: _Describe the goal of the solution_
+* **Change list item attribute**: Actualiza valores de atributos de lista de SharePoint.
+* **Export document versions**: Descarga todas las versiones previas de un documento en una biblioteca de documentos de SharePoint.
+* **Restore document versions**: Restaura una versión previa deseada de un documento en una biblioteca de documentos de SharePoint.

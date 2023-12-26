@@ -1,3 +1,21 @@
+# General data
+# Description: "Restore the last published major version of a document."
+
+# Script execution steps
+# 1. Connect to the source SharePoint Online Site
+# 2. Set values to update
+# 3. Update list item
+
+# Clear and present
+Clear-Host
+Write-Host -f DarkCyan "============================================="
+Write-Host -f DarkCyan "= Actualización de atributos de elementos de lista ="
+Write-Host -f DarkCyan "============================================="
+
+Write-Host
+Write-Host -f Magenta "Este proceso actualiza valores de atributos de lista de SharePoint."
+Write-Host
+
 $developTenant = "facujuarezdev"
 $developSiteAlias = "GestionDocumentalDev"
 
